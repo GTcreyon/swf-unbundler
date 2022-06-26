@@ -1,10 +1,13 @@
 # SWF Unbundler
 A python tool to extract SWF files from Flash projector executable bundles.
 
+## Dependencies
+- [Python](https://www.python.org/downloads)
+
 ## Usage
 1. Download unbundle.py
 2. Open a command line (CMD, PowerShell, Bash, Terminal, etc.) in the directory containing unbundle.py
-3. Run `unbundle.py <path to input file>`
+3. Run `python unbundle.py <path to input file>` (might be `python3` instead of `python`)
 
 ## Additional Arguments
 - \--output
