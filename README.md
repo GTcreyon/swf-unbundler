@@ -12,3 +12,6 @@ A python tool to extract SWF files from Flash projector executable bundles.
 	+ Omitting this will result in output being stored in a file with the same name as the input file, followed by the suffix "_unpacked.swf"
 - \--verbose
 	+ Displays verbose output
+
+## Credit
+http://www.nullsecurity.org/article/extracting_swf_from_flash_projector
