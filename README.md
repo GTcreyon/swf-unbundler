@@ -10,11 +10,13 @@ A python tool to extract SWF files from Flash projector executable bundles.
 3. Run `python unbundle.py <path to input file>` (might be `python3` instead of `python`)
 
 ## Additional Arguments
-- \--output
+- \-o, \--output
 	+ Specifies the path of the output file
 	+ Omitting this will print to stdout
-- \--verbose
+- \-v, \--verbose
 	+ Displays verbose output
+- \-e, \--executable
+	+ Retrieves the executable instead of the SWF
 
 ## Credit
 http://www.nullsecurity.org/article/extracting_swf_from_flash_projector
