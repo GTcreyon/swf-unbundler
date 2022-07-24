@@ -8,6 +8,7 @@ argparser.add_argument('-i', '--input', help='input file name; omitting will rea
 argparser.add_argument('-o', '--output', help='output file name; omitting will print to stdout')
 argparser.add_argument('-v', '--verbose', help='print verbose output; do NOT use when printing to stdout', action='store_true')
 argparser.add_argument('-e', '--executable', help='retrieve executable instead of swf', action='store_true')
+argparser.add_argument('-b', '--bundlewith', help='bundle swf with this executable instead of extracting')
 args = argparser.parse_args()
 
 
@@ -38,42 +39,75 @@ def main():
             print('File opened successfully')
         input_path = args.input
 
-    # a 32-bit integer 0xFA123456 marks this as a SWF bundle
-    # the next 32-bit integer stores the SWF length in bytes
-    file_in.seek(-8, 2)
-    if int.from_bytes(file_in.read(4), 'little') == 0xFA123456:
+    if args.bundlewith == None:
         if args.verbose:
-            print('SWF marker found, this is probably a SWF bundle')
-        
-        # get the SWF length in bytes
-        swf_length = int.from_bytes(file_in.read(4), 'little')
-        if args.verbose:
-            print('SWF length:', swf_length)
-        
-        if args.executable:
-            # seek to the start of the file
-            file_in.seek(0, 0)
-
-            # read the executable
-            data = file_in.read(os.path.getsize(input_path) - swf_length - 8)
-        else:
-            # seek backwards by the number of bytes indicated by the SWF length, back to the start of the SWF
-            file_in.seek(-8 - swf_length, 2)
-
-            # read the SWF
-            data = file_in.read(swf_length)
-        
-        file_in.close()
-
-        if os.path.exists('.unbundle_temp'):
-            os.remove('.unbundle_temp')
+            print('Attempting to unbundle')
+        # a 32-bit integer 0xFA123456 marks this as a SWF bundle
+        # the next 32-bit integer stores the SWF length in bytes
+        file_in.seek(-8, 2)
+        if int.from_bytes(file_in.read(4), 'little') == 0xFA123456:
             if args.verbose:
-                print('Removed temp file')
+                print('SWF marker found, this is probably a SWF bundle')
+            
+            # get the SWF length in bytes
+            swf_length = int.from_bytes(file_in.read(4), 'little')
+            if args.verbose:
+                print('SWF length:', swf_length)
+            
+            if args.executable:
+                # seek to the start of the file
+                file_in.seek(0, 0)
 
-        # output
-        output_data(data)
+                # read the executable
+                data = file_in.read(os.path.getsize(input_path) - swf_length - 8)
+            else:
+                # seek backwards by the number of bytes indicated by the SWF length, back to the start of the SWF
+                file_in.seek(-8 - swf_length, 2)
+
+                # read the SWF
+                data = file_in.read(swf_length)
+            
+            file_in.close()
+
+            # output
+            output_data(data)
+        else:
+            print('ERROR: No SWF file detected.', file=sys.stderr)
     else:
-        print('ERROR: No SWF file detected.', file=sys.stderr)
+        if args.verbose:
+            print('Attempting to bundle')
+            if args.executable:
+                print('Ignoring executable flag')
+
+        if args.verbose:
+            print('Reading executable')
+        file_sa = open(args.bundlewith, 'rb')
+        sa_data = file_sa.read()
+        file_sa.close()
+        if args.verbose:
+            print('Read executable')
+
+        if args.verbose:
+            print('Reading SWF')
+        swf_length = os.path.getsize(input_path)
+        swf_data = file_in.read()
+        file_in.close()
+        if args.verbose:
+            print('Read SWF')
+
+        if args.verbose:
+            print('Creating bundle')
+        data = sa_data + swf_data + int.to_bytes(0xFA123456, 4, 'little') + int.to_bytes(swf_length, 4, 'little')
+        if args.verbose:
+            print('Created bundle')
+            
+        output_data(data)
+    
+    if os.path.exists('.unbundle_temp'):
+        os.remove('.unbundle_temp')
+        if args.verbose:
+            print('Removed temp file')
+
 
 
 def output_data(data):
@@ -83,7 +117,7 @@ def output_data(data):
         file_out = open(args.output, 'wb') # save to output file
         file_out.write(data)
         file_out.close()
-        print('Successfully unbundled to file %s! Make sure to check the output file.' % args.output)
+        print('Successfully exported to file %s! Make sure to check the output file.' % args.output)
 
 
 main()

@@ -20,6 +20,9 @@ A python tool to extract SWF files from Flash projector executable bundles.
 	+ Displays verbose output
 - \-e, \--executable
 	+ Retrieves the executable instead of the SWF
+- \-b, \--bundlewith
+	+ Specifies the path of a standalone executable.
+	+ When present, bundles the input SWF with this executable instead of extracting.
 
 ## Credit
 http://www.nullsecurity.org/article/extracting_swf_from_flash_projector
