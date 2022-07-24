@@ -4,17 +4,39 @@ import argparse
 import os
 import sys
 argparser = argparse.ArgumentParser()
-argparser.add_argument('input', help='input file name')
+argparser.add_argument('-i', '--input', help='input file name; omitting will read from stdin')
 argparser.add_argument('-o', '--output', help='output file name; omitting will print to stdout')
-argparser.add_argument('-v', '--verbose', help='print verbose output', action='store_true')
+argparser.add_argument('-v', '--verbose', help='print verbose output; do NOT use when printing to stdout', action='store_true')
 argparser.add_argument('-e', '--executable', help='retrieve executable instead of swf', action='store_true')
 args = argparser.parse_args()
 
+
 def main():
-    # open input file
-    file_in = open(args.input, 'rb')
-    if args.verbose:
-        print('File opened successfully')
+    if args.input == None:
+        # temporarily save pipe to a file in order to ensure seeking works
+        # there might be a better way of doing this
+        if args.verbose:
+            print('Reading from stdin')
+        stdin_data = sys.stdin.buffer.read()
+        if os.path.exists('.unbundle_temp'):
+            os.remove('.unbundle_temp')
+            if args.verbose:
+                print('Removed leftover temp file')
+        file_temp = open('.unbundle_temp', 'wb')
+        file_temp.write(stdin_data)
+        file_temp.close()
+        if args.verbose:
+            print('Created temporary file')
+        file_in = open('.unbundle_temp', 'rb')
+        if args.verbose:
+            print('File opened successfully')
+        input_path = '.unbundle_temp'
+    else:
+        # open input file
+        file_in = open(args.input, 'rb')
+        if args.verbose:
+            print('File opened successfully')
+        input_path = args.input
 
     # a 32-bit integer 0xFA123456 marks this as a SWF bundle
     # the next 32-bit integer stores the SWF length in bytes
@@ -33,28 +55,35 @@ def main():
             file_in.seek(0, 0)
 
             # read the executable
-            data = file_in.read(os.path.getsize(args.input) - swf_length - 8)
-            file_in.close()
+            data = file_in.read(os.path.getsize(input_path) - swf_length - 8)
         else:
             # seek backwards by the number of bytes indicated by the SWF length, back to the start of the SWF
             file_in.seek(-8 - swf_length, 2)
 
             # read the SWF
             data = file_in.read(swf_length)
-            file_in.close()
+        
+        file_in.close()
+
+        if os.path.exists('.unbundle_temp'):
+            os.remove('.unbundle_temp')
+            if args.verbose:
+                print('Removed temp file')
 
         # output
         output_data(data)
     else:
         print('ERROR: No SWF file detected.', file=sys.stderr)
 
+
 def output_data(data):
     if args.output == None:
-        print(data) # stdout print
+        sys.stdout.buffer.write(data) # stdout print
     else:
         file_out = open(args.output, 'wb') # save to output file
         file_out.write(data)
         file_out.close()
         print('Successfully unbundled to file %s! Make sure to check the output file.' % args.output)
+
 
 main()
